@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
@@ -9,6 +9,7 @@ const LoginPage = () => {
   const [captcha, setCaptcha] = useState("");
   const [userInput, setUserInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const generateCaptcha = () => {
@@ -20,19 +21,32 @@ const LoginPage = () => {
     return result;
   };
 
-  // Generate CAPTCHA on load
-  React.useEffect(() => {
+  useEffect(() => {
     setCaptcha(generateCaptcha());
   }, []);
+
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email.");
+      setLoading(false);
+      return;
+    }
+    if (!password) {
+      setError("Password is required.");
+      setLoading(false);
+      return;
+    }
     if (userInput !== captcha) {
       setError("CAPTCHA does not match. Please try again.");
-      setCaptcha(generateCaptcha()); // Reset CAPTCHA
-      setUserInput(""); // Clear input
+      setCaptcha(generateCaptcha());
+      setUserInput("");
+      setLoading(false);
       return;
     }
 
@@ -46,20 +60,23 @@ const LoginPage = () => {
       const result = await response.json();
 
       if (response.ok) {
-        // Redirect to dashboard
         router.push("/dashboard");
       } else {
-        setError(result.error || "Login failed.");
+        setError(result.error || "Invalid email or password.");
       }
-    } catch (error) {
+    } catch (err) {
       setError("An error occurred. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">Notification of Residence for Foreigners</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">
+          Notification of Residence for Foreigners
+        </h1>
 
         {error && <div className="mb-4 text-red-600 text-center">{error}</div>}
 
@@ -112,9 +129,12 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            className={`w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={loading}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 

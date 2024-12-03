@@ -1,45 +1,36 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import prisma from "@/lib/prisma";
+import prisma from "../../../lib/prisma"; // Adjust the path based on your setup
 
-const SECRET_KEY = process.env.JWT_SECRET || "default-secret";
-
-interface JwtPayload {
-  id: number;
+// GET: Fetch Profile
+export async function GET() {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: 2 }, // Use logged-in user's ID here
+      select: { id: true, name: true, email: true }, // Exclude the password field
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    return NextResponse.json(user);
+  } catch (error) {
+    return NextResponse.json({ error: "Error fetching profile" }, { status: 500 });
+  }
 }
 
-export async function GET(req: Request) {
+// PUT: Update Profile
+export async function PUT(req: Request) {
   try {
-    // Extract token from cookies
-    const token = req.headers
-      .get("cookie")
-      ?.split("; ")
-      .find((c) => c.startsWith("token="))
-      ?.split("=")[1];
-
-    if (!token) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify and decode the token
-    const decoded = jwt.verify(token, SECRET_KEY) as JwtPayload;
-
-    // Fetch user data
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { name: true, email: true }, // Only return necessary fields
+    const data = await req.json();
+    const updatedUser = await prisma.user.update({
+      where: { id: 1 }, // Use logged-in user's ID here
+      data: {
+        name: data.name,
+        email: data.email,
+      },
+      select: { id: true, name: true, email: true }, // Exclude the password field
     });
-
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(user);
-  } catch (error: any) {
-    console.error("Error in GET /api/profile:", error.message || error);
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    return NextResponse.json({ error: "Error updating profile" }, { status: 500 });
   }
 }
