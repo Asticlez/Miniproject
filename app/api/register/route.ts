@@ -1,45 +1,52 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { z } from 'zod';
 
-// Schema for validating request data
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6), // Minimum 6 characters
-  name: z.string().min(1), // Name must not be empty
+  name: z.string().min(1),  // Must fill up the name in there  
 });
 
 export async function POST(req: Request) {
-  try {
-    // Parse and validate input data
-    const { email, password, name } = registerSchema.parse(await req.json());
+  console.log("DATABASE_URL in API:", process.env.DATABASE_URL);
+  console.log("Incoming registration request"); 
 
-    // Check if the user already exists
+  try {
+    const { email, password, name } = registerSchema.parse(await req.json());
+    console.log("Parsed request data:", { email, name });
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
+
     if (existingUser) {
-      return NextResponse.json({ success: false, error: "User already exists" }, { status: 400 });
+      console.log("User already exists:", existingUser.email); 
+      return NextResponse.json(
+        { success: false, error: "User already exists" },
+        { status: 400 }
+      );
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create the user
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
+      data: { email, password, name },
     });
 
+    console.log("User created successfully:", user); 
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    // Handle specific errors (e.g., validation)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
-    }
+    console.error("Error during user registration:", error); 
 
-    // Log unexpected errors for debugging
-    console.error("Error during user registration:", error);
-    return NextResponse.json({ success: false, error: "Something went wrong" }, { status: 500 });
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { success: false, error: error.message || "Something went wrong" },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json(
+      { success: false, error: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }
