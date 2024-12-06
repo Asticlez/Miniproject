@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native"] // Optional for binary compatibility
+  binaryTargets = ["native"]
 }
 
 datasource db {
@@ -9,8 +9,27 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
   password String
   name     String
+  role     String   @default("user") // Roles: 'user', 'admin'
+}
+
+model Accommodation {
+  id          Int      @id @default(autoincrement())
+  checkInDate DateTime
+  checkOutDate DateTime?
+  informDate  DateTime
+  firstName   String
+  lastName    String
+  nationality String
+  middleName  String?
+  passportNo  String   @unique
+  gender      String
+  birthDate   DateTime
+  phoneNo     String?
+  nights      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 }

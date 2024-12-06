@@ -1,12 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import 'dotenv/config'; // Ensure .env is loaded globally
-
-console.log("Prisma Client DATABASE_URL:", process.env.DATABASE_URL); // Debug to ensure value is set
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ["query", "info", "warn", "error"], // Log levels for debugging
+  });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 export default prisma;
